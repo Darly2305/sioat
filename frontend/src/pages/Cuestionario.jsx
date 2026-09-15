@@ -394,12 +394,11 @@ export default function Cuestionario() {
               <p className="text-[16px] leading-relaxed mb-4" style={{ color: C.texto }}>
                 En sexto, séptimo y octavo cursas tres experiencias educativas optativas.
                 No se eligen sueltas: forman un bloque. Ese bloque es lo que te vuelve
-                especialista en algo concreto y es lo primero que un empleador lee en tu kardex.
+                especialista en algo concreto y es lo primero que un empleador lee en tu currículum.
               </p>
               <p className="text-[14.5px] leading-relaxed mb-8" style={{ color: C.suave }}>
                 Primero vas a ver los bloques. Si ya sabes cuál quieres, lo eliges y terminas.
-                Si no, contestas un cuestionario de unos doce minutos. Puedes salirte cuando
-                quieras: al volver sigues donde te quedaste.
+                Si no, contestarás un breve un cuestionario de unos doce minutos. 
               </p>
 
               {bloqueado ? (
@@ -434,8 +433,7 @@ export default function Cuestionario() {
             <div className="w-full max-w-[780px] mx-auto">
               <Seccion icono={Layers} titulo={`Los ${cat.itinerarios.length} bloques de área terminal`}>
                 <p className="text-[14px] leading-relaxed mb-5" style={{ color: C.texto }}>
-                  Toca cualquiera para ver su perfil completo, sus tres experiencias educativas
-                  y dónde puedes trabajar con él.
+                  Toca cualquiera para conocerlo.
                 </p>
                 {cat.itinerarios.map(b => (
                   <Acordeon key={b.id} bloque={b} abierto={abierto === b.id}
@@ -459,7 +457,8 @@ export default function Cuestionario() {
                 <span className="text-[12.5px] font-semibold" style={{ color: C.verde }}>Punto de partida</span>
               </div>
               <h2 className="text-[30px] sm:text-[34px] font-bold leading-tight mb-6" style={{ color: C.azul }}>
-                Después de leerlos, ¿ya sabes cuál quieres?
+                Después de leerlos, ¿ya sabes cuál quieres?. 
+                text0= Si seleccionas la opción A, registras tu bloque y terminas la actividad. Si eliges la opción B o C, realizarás un cuestionario que te sugerirá un bloque. Recuerda responder con calma y honestamente.
               </h2>
               <div className="flex flex-col gap-2.5">
                 <Opcion letra="A" texto="Sí, ya sé cuál quiero" onClick={() => responderFase0(true, "elegir")} />
@@ -499,7 +498,7 @@ export default function Cuestionario() {
           <div className={pantalla}>
             <Transicion icono={ClipboardList} antetitulo="Parte 1 de 3"
               titulo="Empecemos por lo que ya cursaste"
-              texto="De cada periodo, del primero al quinto, vas a escoger las materias que más te gustaron y la que menos. No importa tu calificación: importa cuál te dio curiosidad. De ahí sale la mitad del diagnóstico. Contesta con calma: una vez que eliges, la pregunta avanza y no se puede regresar."
+              texto="De cada periodo, del primero al quinto, vas a escoger las Experiencias que más te gustaron y la que menos. Toma en cuenta que lo importante no es tu calificación, sino las experiencias educativas que te resultaron interesantes, ya que de ello depende la mitad de este diagnóstico. Responde con calma y contesta todas las preguntas"
               onSeguir={() => ir(() => setVista("f1"))} />
           </div>
         )}
@@ -507,7 +506,7 @@ export default function Cuestionario() {
           <div className={pantalla}>
             <Transicion icono={Compass} antetitulo="Parte 2 de 3"
               titulo="Ahora, cómo trabajas"
-              texto={`${cat.reactivos.length} situaciones con cuatro caminos cada una. No hay respuesta correcta y ninguna opción es mejor que otra: solo elige la que harías tú. Van rápido.`}
+              texto={`${cat.reactivos.length} situaciones con cuatro alternativas distintas. No hay respuesta correcta y ninguna opción es mejor que otra: Elige la que se adapta más a ti.`}
               onSeguir={() => ir(() => setVista("f2"))} />
           </div>
         )}
@@ -731,8 +730,7 @@ export default function Cuestionario() {
                 )}
 
                 <p className="text-[13px] leading-relaxed" style={{ color: C.suave }}>
-                  Tu coordinación ya tiene el registro. Lo usan para decidir cuántos grupos abrir
-                  de cada optativa el próximo periodo.
+                  La jefatura de carrera ya tiene tu registro. Se usará como guía para la apertura de las experiencias educativas optativas que se ofertarán en tus próximos periodos escolares. <br>Gracias</br>
                 </p>
               </div>
             </div>

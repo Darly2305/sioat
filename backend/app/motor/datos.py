@@ -304,7 +304,7 @@ ITINERARIOS = [
          frase="gestor especializado en comercio exterior",
          resumen="Llevar un producto mexicano a mercados extranjeros.",
          opts=["EI", "GA", "PCE"],
-         perfil="Dominas la normativa aduanera, los tratados comerciales y las variables macroeconómicas que hacen viable una exportación. Sabes si un producto puede salir del país y qué cuesta que salga.",
+         perfil="Dominas la normativa aduanera, los tratados comerciales y las variables macroeconómicas que hacen viable una exportación. Sabes si un producto puede salir del país y cuánto cuesta que salga.",
          salidas=["Analista en agencia aduanal", "Coordinador de exportaciones", "Asesor en cámaras de comercio"]),
     dict(id=2, nombre="Logística, Aduanas y Distribución",
          nombre_en="Supply Chain & Distribution",
