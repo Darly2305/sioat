@@ -16,6 +16,21 @@ RE_MATRICULA = re.compile(r"^[A-Za-z]?\d{6,10}$")
 RE_SECCION = re.compile(r"^[A-Za-z0-9\- ]{1,10}$")
 
 
+def _dominio_valido(correo):
+    """True si el correo pertenece a alguno de los dominios aceptados, o si no
+    se configuró ninguno."""
+    permitidos = current_app.config["DOMINIOS_PERMITIDOS"]
+    return not permitidos or any(correo.endswith(d) for d in permitidos)
+
+
+def _texto_dominios():
+    permitidos = current_app.config["DOMINIOS_PERMITIDOS"]
+    if len(permitidos) == 1:
+        return f"Usa tu correo institucional (termina en {permitidos[0]})."
+    return ("Usa tu correo institucional. Se aceptan los que terminan en "
+            + " o ".join(permitidos) + ".")
+
+
 def _error(msg, code=400):
     return jsonify(error=msg), code
 
@@ -33,9 +48,8 @@ def registro():
         return _error("Escribe tu nombre completo.")
     if not RE_CORREO.match(correo):
         return _error("Ese correo no parece válido.")
-    dominio = current_app.config["DOMINIO_PERMITIDO"]
-    if dominio and not correo.endswith(dominio):
-        return _error(f"Usa tu correo institucional (termina en {dominio}).")
+    if not _dominio_valido(correo):
+        return _error(_texto_dominios())
     if matricula and not RE_MATRICULA.match(matricula):
         return _error("La matrícula no tiene el formato esperado.")
     if seccion and not RE_SECCION.match(seccion):
@@ -108,9 +122,8 @@ def actualizar_perfil():
         correo = (d["correo"] or "").strip().lower()
         if not RE_CORREO.match(correo):
             return _error("Ese correo no parece válido.")
-        dominio = current_app.config["DOMINIO_PERMITIDO"]
-        if dominio and u.rol == "estudiante" and not correo.endswith(dominio):
-            return _error(f"Usa tu correo institucional (termina en {dominio}).")
+        if u.rol == "estudiante" and not _dominio_valido(correo):
+            return _error(_texto_dominios())
         otro = Usuario.query.filter(Usuario.correo == correo, Usuario.id != u.id).first()
         if otro:
             return _error("Ese correo ya está en uso por otra cuenta.", 409)

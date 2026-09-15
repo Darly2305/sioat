@@ -28,11 +28,11 @@ class Config:
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", SECRET_KEY)
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=12)
 
-    DB_USER = os.environ["DB_USER"]
-    DB_PASS = os.environ["DB_PASS"]
-    DB_HOST = os.environ["DB_HOST"]
-    DB_PORT = os.environ["DB_PORT"]
-    DB_NAME = os.environ["DB_NAME"]
+    DB_USER = os.getenv("DB_USER", "sioat")
+    DB_PASS = os.getenv("DB_PASS", "sioat")
+    DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
+    DB_PORT = os.getenv("DB_PORT", "3306")
+    DB_NAME = os.getenv("DB_NAME", "sioat")
 
     # Algunos proveedores entregan la conexión completa en una sola variable.
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL") or (
@@ -57,5 +57,9 @@ class Config:
     CORS_ORIGINS = [o.strip().rstrip("/") for o in
                     os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",") if o.strip()]
 
-    # Dominio institucional. Vacío = cualquier correo puede registrarse.
-    DOMINIO_PERMITIDO = os.getenv("DOMINIO_PERMITIDO", "")
+    # Dominios institucionales aceptados al registrarse. Se acepta más de uno
+    # separados por coma, porque «@estudiantes.uv.mx» no termina en «@uv.mx»:
+    # comparar con una sola cadena dejaría fuera a la mitad de la Facultad.
+    # Vacío = cualquier correo puede registrarse.
+    DOMINIOS_PERMITIDOS = [d.strip().lower() for d in
+                           os.getenv("DOMINIO_PERMITIDO", "").split(",") if d.strip()]
