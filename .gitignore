@@ -1,0 +1,17 @@
+# secretos
+backend/.env
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# node
+node_modules/
+dist/
+.vite/
+
+# sistema
+.DS_Store
+Thumbs.db

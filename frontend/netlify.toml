@@ -1,0 +1,20 @@
+# Configuración de despliegue para Netlify.
+# Con este archivo, al importar el repo no hay que llenar nada a mano.
+
+[build]
+  base    = "frontend"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# React Router maneja las rutas del lado del cliente. Sin esta regla, entrar
+# directo a /panel devuelve 404 porque ese archivo no existe en el servidor.
+[[redirects]]
+  from = "/*"
+  to   = "/index.html"
+  status = 200
+
+# VITE_API_URL no va aquí: se carga desde el panel de Netlify, porque cambia
+# entre el sitio de producción y las vistas previas de cada rama.

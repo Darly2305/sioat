@@ -1,0 +1,42 @@
+# Plano de despliegue para Render.
+#
+# Con este archivo en la raíz del repositorio, Render lee la configuración sola:
+# New → Blueprint → elige el repo. Así no hay que llenar campos a mano, que es
+# donde suelen colarse los errores de ruta y de comando de arranque.
+#
+# Las variables marcadas sync:false NO se guardan aquí: se cargan desde el panel
+# de Render. Son secretos y este archivo va a GitHub.
+
+services:
+  - type: web
+    name: sioat-api
+    runtime: python
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --timeout 60
+    healthCheckPath: /api/salud
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.4"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_SSL_CA_CONTENT
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: DOMINIO_PERMITIDO
+        sync: false
