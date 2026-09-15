@@ -221,7 +221,7 @@ REACTIVOS = [
         ("c", "Escuchar distintas posturas, mediar en discusiones y convencer a un grupo", "FCD"),
         ("d", "Investigar a fondo un tema, contrastar diversas fuentes y redactar conclusiones sustentadas", "SI"),
     ]),
-    (11, "Si proyectas tu carrera a diez años, ¿qué escenario te entusiasma más?", [
+    (11, "Si proyectas tu carrera profesional a diez años, ¿qué escenario te entusiasma más?", [
         ("a", "Viajando para negociar y cerrar acuerdos con clientes internacionales", "EI"),
         ("b", "Dirigiendo el crecimiento de tu propia marca o tienda de comercio electrónico", "CE"),
         ("c", "Liderando una iniciativa que transformó positivamente la realidad de tu comunidad", "ES"),
