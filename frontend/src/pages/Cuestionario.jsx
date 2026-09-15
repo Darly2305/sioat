@@ -458,8 +458,10 @@ export default function Cuestionario() {
               </div>
               <h2 className="text-[30px] sm:text-[34px] font-bold leading-tight mb-6" style={{ color: C.azul }}>
                 Después de leerlos, ¿ya sabes cuál quieres?. 
-                text0= Si seleccionas la opción A, registras tu bloque y terminas la actividad. Si eliges la opción B o C, realizarás un cuestionario que te sugerirá un bloque. Recuerda responder con calma y honestamente.
               </h2>
+              <p className="text-[30px] sm:text-[34px] font-bold leading-tight mb-6" style={{ color: C.azul }}>
+                Si seleccionas la opción A, registras tu bloque y terminas la actividad. Si eliges la opción B o C, realizarás un cuestionario que te sugerirá un bloque. Recuerda responder con calma y honestamente.
+              </p>
               <div className="flex flex-col gap-2.5">
                 <Opcion letra="A" texto="Sí, ya sé cuál quiero" onClick={() => responderFase0(true, "elegir")} />
                 <Opcion letra="B" texto="Dudo entre dos o tres" onClick={() => responderFase0(false, "t1")} />

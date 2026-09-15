@@ -45,6 +45,22 @@ PERFILES = {
          ["Especialista en reporte ESG", "Comunicación corporativa", "Consultor en comunicación de impacto"]),
 }
 
+def upsert_por(modelo, filtro, **campos):
+    """Busca por una combinación de columnas en lugar de por llave primaria.
+
+    Las opciones de los reactivos se identifican por (reactivo, letra), no por
+    su id autoincremental. Actualizarlas en su sitio es obligatorio: la tabla
+    respuesta_fase2 guarda el id de la opción elegida, así que borrarlas y
+    recrearlas rompería la llave foránea y, peor aún, dejaría respuestas
+    apuntando a opciones distintas de las que el estudiante eligió."""
+    obj = modelo.query.filter_by(**filtro).first()
+    if obj:
+        for k, v in campos.items():
+            setattr(obj, k, v)
+    else:
+        obj = modelo(**filtro, **campos)
+        db.session.add(obj)
+    return obj
 
 def upsert(modelo, pk, **campos):
     obj = db.session.get(modelo, pk)
@@ -87,25 +103,22 @@ def main(crear_docente=False):
         db.session.commit()
 
         print("→ reactivos de la fase 2")
-        OpcionReactivo.query.delete()
         for numero, enunciado, ops in D.REACTIVOS:
             upsert(Reactivo, numero, numero=numero, enunciado=enunciado,
                    en_breve=numero in D.REACTIVOS_VERSION_BREVE)
             db.session.flush()
             for letra, texto, optativa in ops:
-                db.session.add(OpcionReactivo(reactivo=numero, letra=letra,
-                                              texto=texto, optativa=optativa,
-                                              puntos=D.PUNTOS_REACTIVO))
+                upsert_por(OpcionReactivo, {"reactivo": numero, "letra": letra},
+                           texto=texto, optativa=optativa, puntos=D.PUNTOS_REACTIVO)
         db.session.commit()
 
         print("→ preguntas de contexto")
-        OpcionContexto.query.delete()
         for numero, enunciado, ops, nota in D.PREGUNTAS_CONTEXTO:
             upsert(PreguntaContexto, numero, numero=numero, enunciado=enunciado, nota=nota)
             db.session.flush()
             for letra, texto, ajustes in ops:
-                db.session.add(OpcionContexto(pregunta=numero, letra=letra,
-                                              texto=texto, ajustes=ajustes))
+                upsert_por(OpcionContexto, {"pregunta": numero, "letra": letra},
+                           texto=texto, ajustes=ajustes)
         db.session.commit()
 
         print("→ itinerarios")

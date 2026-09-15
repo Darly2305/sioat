@@ -28,11 +28,11 @@ class Config:
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", SECRET_KEY)
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=12)
 
-    DB_USER = os.getenv("DB_USER", "sioat")
-    DB_PASS = os.getenv("DB_PASS", "sioat")
-    DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
-    DB_PORT = os.getenv("DB_PORT", "3306")
-    DB_NAME = os.getenv("DB_NAME", "sioat")
+    DB_USER = os.getenv("DB_USER")
+    DB_PASS = os.getenv("DB_PASS")
+    DB_HOST = os.getenv("DB_HOST")
+    DB_PORT = os.getenv("DB_PORT")
+    DB_NAME = os.getenv("DB_NAME")
 
     # Algunos proveedores entregan la conexión completa en una sola variable.
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL") or (

@@ -10,6 +10,7 @@ import argparse
 from datetime import datetime, timedelta
 
 from argon2 import PasswordHasher
+from sqlalchemy import text
 
 from app import crear_app
 from app.models import (Academia, Aplicacion, EECurricular, Itinerario,
@@ -17,6 +18,24 @@ from app.models import (Academia, Aplicacion, EECurricular, Itinerario,
                         Optativa, PesoAcademiaOptativa, PreguntaContexto,
                         Reactivo, Usuario, db)
 from app.motor import datos as D
+
+def upsert_por(modelo, filtro, **campos):
+    """Busca por una combinación de columnas en lugar de por llave primaria.
+
+    Las opciones de los reactivos se identifican por (reactivo, letra), no por
+    su id autoincremental. Actualizarlas en su sitio es obligatorio: la tabla
+    respuesta_fase2 guarda el id de la opción elegida, así que borrarlas y
+    recrearlas rompería la llave foránea y, peor aún, dejaría respuestas
+    apuntando a opciones distintas de las que el estudiante eligió."""
+    obj = modelo.query.filter_by(**filtro).first()
+    if obj:
+        for k, v in campos.items():
+            setattr(obj, k, v)
+    else:
+        obj = modelo(**filtro, **campos)
+        db.session.add(obj)
+    return obj
+
 
 def upsert(modelo, pk, **campos):
     obj = db.session.get(modelo, pk)
@@ -45,7 +64,7 @@ def main(crear_docente=False):
         db.session.commit()
 
         print("→ matriz de afinidad")
-        PesoAcademiaOptativa.query.delete()
+        PesoAcademiaOptativa.query.delete()   # sin referencias externas
         for opt, pesos in D.PESOS.items():
             for acad, peso in pesos.items():
                 db.session.add(PesoAcademiaOptativa(academia=acad, optativa=opt, peso=peso))
@@ -59,28 +78,26 @@ def main(crear_docente=False):
         db.session.commit()
 
         print("→ reactivos de la fase 2")
-        OpcionReactivo.query.delete()
         for numero, enunciado, ops in D.REACTIVOS:
             upsert(Reactivo, numero, numero=numero, enunciado=enunciado,
                    en_breve=numero in D.REACTIVOS_VERSION_BREVE)
             db.session.flush()
             for letra, texto, optativa in ops:
-                db.session.add(OpcionReactivo(reactivo=numero, letra=letra,
-                                              texto=texto, optativa=optativa,
-                                              puntos=D.PUNTOS_REACTIVO))
+                upsert_por(OpcionReactivo, {"reactivo": numero, "letra": letra},
+                           texto=texto, optativa=optativa, puntos=D.PUNTOS_REACTIVO)
         db.session.commit()
 
         print("→ preguntas de contexto")
-        OpcionContexto.query.delete()
         for numero, enunciado, ops, nota in D.PREGUNTAS_CONTEXTO:
             upsert(PreguntaContexto, numero, numero=numero, enunciado=enunciado, nota=nota)
             db.session.flush()
             for letra, texto, ajustes in ops:
-                db.session.add(OpcionContexto(pregunta=numero, letra=letra,
-                                              texto=texto, ajustes=ajustes))
+                upsert_por(OpcionContexto, {"pregunta": numero, "letra": letra},
+                           texto=texto, ajustes=ajustes)
         db.session.commit()
 
         print("→ bloques de área terminal")
+        # Esta sí se puede recrear: ninguna tabla de respuestas la referencia.
         ItinerarioOptativa.query.delete()
         for b in D.ITINERARIOS:
             upsert(Itinerario, b["id"], id=b["id"], nombre=b["nombre"],
@@ -115,10 +132,25 @@ def main(crear_docente=False):
             db.session.commit()
             print("→ aplicación activa creada, con límite a 45 días")
 
+        huerfanas = db.session.execute(text("""
+            SELECT COUNT(*) FROM opcion_reactivo o
+            WHERE NOT EXISTS (SELECT 1 FROM reactivo r WHERE r.numero = o.reactivo)
+        """)).scalar()
+
         print(f"\nListo. {Optativa.query.count()} optativas, "
               f"{Reactivo.query.count()} reactivos, "
+              f"{OpcionReactivo.query.count()} opciones, "
               f"{Itinerario.query.count()} bloques, "
               f"{PesoAcademiaOptativa.query.count()} pesos.")
+        if huerfanas:
+            print(f"Aviso: {huerfanas} opciones quedaron sin reactivo. Revísalas antes de aplicar.")
+
+        respuestas = db.session.execute(text(
+            "SELECT COUNT(*) FROM respuesta_fase2")).scalar()
+        if respuestas:
+            print(f"\nHay {respuestas} respuestas de la fase 2 ya guardadas. Se conservaron: "
+                  "las opciones se actualizaron en su sitio y siguen apuntando a la misma "
+                  "optativa, así que esas respuestas siguen siendo válidas.")
 
 
 if __name__ == "__main__":
