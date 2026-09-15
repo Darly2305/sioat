@@ -732,7 +732,7 @@ export default function Cuestionario() {
                 )}
 
                 <p className="text-[13px] leading-relaxed" style={{ color: C.suave }}>
-                  La jefatura de carrera ya tiene tu registro. Se usará como guía para la apertura de las experiencias educativas optativas que se ofertarán en tus próximos periodos escolares. <br>Gracias</br>
+                  La jefatura de carrera ya tiene tu registro. Se usará como guía para la apertura de las experiencias educativas optativas que se ofertarán en tus próximos periodos escolares. Gracias
                 </p>
               </div>
             </div>
