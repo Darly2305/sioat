@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Plus, Minus, Check, CircleAlert, GraduationCap, Layers,
-  Compass, ClipboardList, CloudOff, Loader2, Lock, LogOut,
+  Compass, ClipboardList, CloudOff, Loader2, Lock, LogOut, ArrowLeft, Pencil,
 } from "lucide-react";
 import { api, crearCola } from "../api";
 import { useAuth } from "../auth";
@@ -291,7 +291,7 @@ export default function Cuestionario() {
   };
 
   const elegirDirecto = async id => {
-    setEligiendo(true);
+    setEligiendo(true); setError("");
     try {
       await api.elegirBloque(id);
       setResultado(await api.resultado());
@@ -394,11 +394,12 @@ export default function Cuestionario() {
               <p className="text-[16px] leading-relaxed mb-4" style={{ color: C.texto }}>
                 En sexto, séptimo y octavo cursas tres experiencias educativas optativas.
                 No se eligen sueltas: forman un bloque. Ese bloque es lo que te vuelve
-                especialista en algo concreto y es lo primero que un empleador lee en tu currículum.
+                especialista en algo concreto y es lo primero que un empleador lee en tu kardex.
               </p>
               <p className="text-[14.5px] leading-relaxed mb-8" style={{ color: C.suave }}>
                 Primero vas a ver los bloques. Si ya sabes cuál quieres, lo eliges y terminas.
-                Si no, contestarás un breve un cuestionario de unos doce minutos. 
+                Si no, contestas un cuestionario de unos doce minutos. Puedes salirte cuando
+                quieras: al volver sigues donde te quedaste.
               </p>
 
               {bloqueado ? (
@@ -433,7 +434,8 @@ export default function Cuestionario() {
             <div className="w-full max-w-[780px] mx-auto">
               <Seccion icono={Layers} titulo={`Los ${cat.itinerarios.length} bloques de área terminal`}>
                 <p className="text-[14px] leading-relaxed mb-5" style={{ color: C.texto }}>
-                  Toca cualquiera para conocerlo.
+                  Toca cualquiera para ver su perfil completo, sus tres experiencias educativas
+                  y dónde puedes trabajar con él.
                 </p>
                 {cat.itinerarios.map(b => (
                   <Acordeon key={b.id} bloque={b} abierto={abierto === b.id}
@@ -457,19 +459,16 @@ export default function Cuestionario() {
                 <span className="text-[12.5px] font-semibold" style={{ color: C.verde }}>Punto de partida</span>
               </div>
               <h2 className="text-[30px] sm:text-[34px] font-bold leading-tight mb-6" style={{ color: C.azul }}>
-                Después de leerlos, ¿ya sabes cuál quieres?. 
+                Después de leerlos, ¿ya sabes cuál quieres?
               </h2>
-              <p className="text-[30px] sm:text-[34px] font-bold leading-tight mb-6" style={{ color: C.azul }}>
-                
-              </p>
               <div className="flex flex-col gap-2.5">
                 <Opcion letra="A" texto="Sí, ya sé cuál quiero" onClick={() => responderFase0(true, "elegir")} />
                 <Opcion letra="B" texto="Dudo entre dos o tres" onClick={() => responderFase0(false, "t1")} />
                 <Opcion letra="C" texto="No tengo idea" onClick={() => responderFase0(false, "t1")} />
               </div>
               <p className="mt-6 text-[13px] leading-relaxed" style={{ color: C.suave }}>
-                Si seleccionas la opción A, registras tu bloque y terminas la actividad. Si eliges la opción B o C, realizarás un cuestionario que te sugerirá un bloque. 
-                Recuerda responder con calma y honestamente.
+                Si eliges la A registras tu bloque y terminas aquí mismo. Si eliges B o C,
+                el cuestionario te va a decir cuál te acomoda según lo que ya cursaste.
               </p>
             </div>
           </div>
@@ -479,10 +478,17 @@ export default function Cuestionario() {
         {vista === "elegir" && (
           <div className="min-h-screen w-full px-5 py-16">
             <div className="w-full max-w-[780px] mx-auto">
+              {resultado && (
+                <button onClick={() => ir(() => setVista("resultado"))}
+                  className="mb-6 flex items-center gap-2 rounded-md px-4 py-2.5 text-[13.5px] font-semibold"
+                  style={{ background: C.carta, color: C.azul, border: `1.5px solid ${C.azul}` }}>
+                  <ArrowLeft size={15} /> Volver a mi resultado
+                </button>
+              )}
               <Seccion icono={Check} titulo="Elige tu bloque">
                 <p className="text-[14px] leading-relaxed mb-5" style={{ color: C.texto }}>
-                  Ábrelo, revísalo una última vez y confirma. Puedes cambiarlo con tu tutor
-                  antes de la fecha de inscripción.
+                  Revísalos con calma y confirma el que quieras. Puedes cambiarlo las veces
+                  que haga falta mientras no cierre la fecha límite.
                 </p>
                 {error && <Aviso>{error}</Aviso>}
                 {cat.itinerarios.map(b => (
@@ -500,7 +506,7 @@ export default function Cuestionario() {
           <div className={pantalla}>
             <Transicion icono={ClipboardList} antetitulo="Parte 1 de 3"
               titulo="Empecemos por lo que ya cursaste"
-              texto="De cada periodo, del primero al quinto, vas a escoger las Experiencias que más te gustaron y la que menos. Toma en cuenta que lo importante no es tu calificación, sino las experiencias educativas que te resultaron interesantes, ya que de ello depende la mitad de este diagnóstico. Responde con calma y contesta todas las preguntas"
+              texto="De cada periodo, del primero al quinto, vas a escoger las materias que más te gustaron y la que menos. No importa tu calificación: importa cuál te dio curiosidad. De ahí sale la mitad del diagnóstico. Contesta con calma: una vez que eliges, la pregunta avanza y no se puede regresar."
               onSeguir={() => ir(() => setVista("f1"))} />
           </div>
         )}
@@ -508,7 +514,7 @@ export default function Cuestionario() {
           <div className={pantalla}>
             <Transicion icono={Compass} antetitulo="Parte 2 de 3"
               titulo="Ahora, cómo trabajas"
-              texto={`${cat.reactivos.length} situaciones con cuatro alternativas distintas. No hay respuesta correcta y ninguna opción es mejor que otra: Elige la que se adapta más a ti.`}
+              texto={`${cat.reactivos.length} situaciones con cuatro caminos cada una. No hay respuesta correcta y ninguna opción es mejor que otra: solo elige la que harías tú. Van rápido.`}
               onSeguir={() => ir(() => setVista("f2"))} />
           </div>
         )}
@@ -604,11 +610,65 @@ export default function Cuestionario() {
                 <div className="flex items-center gap-2 mb-3">
                   <Check size={18} color={C.verde} strokeWidth={2.5} />
                   <span className="text-[12.5px] font-semibold" style={{ color: C.verde }}>
-                    {directo ? "Registrado" : "Tu resultado"}
+                    {resultado.confirmado ? "Tu bloque quedó registrado" : "Tu resultado"}
                   </span>
                 </div>
 
-                {!g ? (
+                {/* Ya confirmó: lo suyo va primero, la recomendación queda como
+                    referencia. Lo que el alumno decidió manda sobre lo que el
+                    sistema sugirió. */}
+                {resultado.confirmado && resultado.eleccion ? (
+                  <>
+                    <h2 className="text-[17px] font-medium mb-2" style={{ color: C.suave }}>
+                      Vas a ser
+                    </h2>
+                    <h1 className="text-[30px] sm:text-[40px] font-extrabold leading-[1.1] mb-6"
+                      style={{ color: C.azul }}>
+                      un {resultado.eleccion.frase}.
+                    </h1>
+                    <Carta acento={C.verde} className="mb-6">
+                      <div className="p-5">
+                        <div className="flex items-center gap-2.5 mb-3">
+                          {(() => { const I = iconoDe(resultado.eleccion.id);
+                            return <I size={19} color={C.verde} strokeWidth={2} />; })()}
+                          <h3 className="text-[16px] font-bold" style={{ color: C.verdeOs }}>
+                            {resultado.eleccion.nombre}
+                          </h3>
+                        </div>
+                        <p className="text-[13.5px] leading-relaxed mb-4 text-justify"
+                          style={{ color: C.texto }}>{resultado.eleccion.perfil}</p>
+                        <div className="grid sm:grid-cols-3 gap-2 mb-4">
+                          {resultado.eleccion.optativas.map((o, i) => (
+                            <Pill key={o.clave} tono={i % 2 === 0 ? "azul" : "verde"}>{o.nombre}</Pill>
+                          ))}
+                        </div>
+                        <div className="grid sm:grid-cols-3 gap-2">
+                          {(resultado.eleccion.salidas || []).map((sa, i) => (
+                            <Pill key={sa} tono={i % 2 === 0 ? "verde" : "azul"}>{sa}</Pill>
+                          ))}
+                        </div>
+                      </div>
+                    </Carta>
+
+                    {!directo && !resultado.acepto_recomendacion && g && (
+                      <p className="text-[13.5px] leading-relaxed mb-6" style={{ color: C.suave }}>
+                        El cuestionario te había sugerido <strong>{g.nombre}</strong>. Elegiste
+                        otro y está perfectamente bien: el diagnóstico orienta, no decide.
+                        Tu coordinación registra las dos cosas.
+                      </p>
+                    )}
+
+                    {resultado.puede_cambiar && (
+                      <div className="flex flex-wrap gap-3 mb-10">
+                        <button onClick={() => ir(() => { setVista("elegir"); setAbierto(null); })}
+                          className="flex items-center gap-2 rounded-md px-6 py-3 text-[14px] font-semibold"
+                          style={{ background: C.carta, color: C.azul, border: `1.5px solid ${C.azul}` }}>
+                          <Pencil size={15} /> Cambiar mi elección
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : !g ? (
                   <>
                     <h1 className="text-[28px] sm:text-[34px] font-extrabold leading-[1.14] mb-4" style={{ color: C.azul }}>
                       Tus respuestas no marcan una inclinación clara todavía.
@@ -650,6 +710,30 @@ export default function Cuestionario() {
                   </>
                 )}
 
+                {!resultado.confirmado && !directo && (
+                  <div className="mb-8">
+                    {g && (
+                      <button onClick={() => elegirDirecto(g.id)} disabled={eligiendo}
+                        className="w-full rounded-md py-3.5 text-[15px] font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-60 mb-3"
+                        style={{ background: C.verde }}>
+                        {eligiendo
+                          ? <><Loader2 size={16} className="animate-spin" /> Registrando…</>
+                          : <><Check size={17} strokeWidth={2.5} /> Sí, quiero este bloque</>}
+                      </button>
+                    )}
+                    <button onClick={() => ir(() => { setVista("elegir"); setAbierto(null); })}
+                      className="w-full rounded-md py-3.5 text-[14.5px] font-semibold"
+                      style={{ background: C.carta, color: C.azul, border: `1.5px solid ${C.azul}` }}>
+                      Prefiero ver los {cat.itinerarios.length} y elegir yo
+                    </button>
+                    <p className="mt-3 text-[13px] leading-relaxed" style={{ color: C.suave }}>
+                      Esto es una recomendación, no una asignación. Puedes quedarte con ella,
+                      tomar cualquiera de las otras dos de abajo, o revisar el catálogo completo.
+                      Y puedes cambiar de opinión las veces que quieras antes de la fecha límite.
+                    </p>
+                  </div>
+                )}
+
                 {resultado.alerta_debil && (
                   <Aviso>
                     Este bloque te queda bien salvo por <strong>{resultado.alerta_debil.nombre}</strong>,
@@ -683,14 +767,16 @@ export default function Cuestionario() {
                 )}
 
                 {!directo && resultado.alternativos?.length > 0 && (
-                  <Seccion icono={Layers} titulo="Las otras dos que más te acomodan">
+                  <Seccion icono={Layers} titulo="Las otras dos que más te acomodan"
+                  >
                     {resultado.alternativos.map(b => {
                       const I = iconoDe(b.id);
+                      const esLaSuya = resultado.eleccion?.id === b.id;
                       return (
-                        <Carta key={b.id} className="mb-2.5">
-                          <div className="px-4 py-3.5 flex items-center gap-3">
+                        <Carta key={b.id} acento={esLaSuya ? C.verde : C.azul} className="mb-2.5">
+                          <div className="px-4 py-3.5 flex flex-wrap items-center gap-3">
                             <I size={17} color={C.azulMed} strokeWidth={2} className="shrink-0" />
-                            <span className="flex-1 min-w-0">
+                            <span className="flex-1 min-w-[180px]">
                               <span className="block text-[14px] font-semibold" style={{ color: C.azulMed }}>
                                 {b.nombre}
                               </span>
@@ -701,6 +787,17 @@ export default function Cuestionario() {
                             <span className="text-[13px] font-bold tabular-nums shrink-0" style={{ color: C.verde }}>
                               {Math.round(b.indice)}
                             </span>
+                            {resultado.puede_cambiar && !esLaSuya && (
+                              <button onClick={() => elegirDirecto(b.id)} disabled={eligiendo}
+                                className="shrink-0 rounded-md px-4 py-2 text-[12.5px] font-semibold disabled:opacity-60"
+                                style={{ background: C.azulSuave, color: C.azulMed }}>
+                                Prefiero este
+                              </button>
+                            )}
+                            {esLaSuya && (
+                              <span className="shrink-0 rounded-md px-3 py-1.5 text-[11.5px] font-semibold text-white"
+                                style={{ background: C.verde }}>Tu elección</span>
+                            )}
                           </div>
                         </Carta>
                       );
@@ -732,7 +829,9 @@ export default function Cuestionario() {
                 )}
 
                 <p className="text-[13px] leading-relaxed" style={{ color: C.suave }}>
-                  La jefatura de carrera ya tiene tu registro. Se usará como guía para la apertura de las experiencias educativas optativas que se ofertarán en tus próximos periodos escolares. Gracias
+                  {resultado.confirmado
+                    ? "Tu coordinación ya tiene el registro. Lo usan para decidir cuántos grupos abrir de cada optativa el próximo periodo."
+                    : "Mientras no confirmes un bloque, tu coordinación cuenta la recomendación como referencia. Confírmalo para que quede tu decisión."}
                 </p>
               </div>
             </div>

@@ -18,10 +18,15 @@ from .auth import requiere_admin, requiere_docente
 
 bp = Blueprint("docente", __name__)
 
-# El modo de la sesión traducido a lenguaje de coordinación.
-METODO = """CASE WHEN s.modo = 'eleccion_directa'
-                 THEN 'Elección del alumno'
-                 ELSE 'Examen diagnóstico' END"""
+# Cómo llegó el estudiante a su bloque, en lenguaje de coordinación.
+# Son cuatro situaciones distintas y conviene no confundirlas: aceptar el
+# diagnóstico y descartarlo dicen cosas muy diferentes sobre el instrumento.
+METODO = """CASE
+    WHEN r.sesion IS NULL                    THEN 'Elección directa'
+    WHEN s.itinerario_elegido IS NULL        THEN 'Sin confirmar'
+    WHEN s.itinerario_elegido = r.itinerario THEN 'Aceptó el diagnóstico'
+    ELSE 'Eligió distinto'
+END"""
 
 
 def _app_id():
@@ -45,13 +50,28 @@ def resumen():
                expiradas, eleccion_directa, pct_completado
         FROM v_avance_aplicacion WHERE aplicacion = :a""")
 
-    metodo = q(f"""
-        SELECT {METODO} AS metodo, COUNT(*) AS alumnos
-        FROM v_bloque_asignado ba JOIN sesion s ON s.id = ba.sesion
-        WHERE ba.aplicacion = :a GROUP BY metodo""")
+    metodo = q("""
+        SELECT CASE ba.origen
+                 WHEN 'eleccion_directa'   THEN 'Elección directa'
+                 WHEN 'acepto_diagnostico' THEN 'Aceptó el diagnóstico'
+                 WHEN 'eligio_distinto'    THEN 'Eligió distinto'
+                 ELSE 'Sin confirmar'
+               END AS metodo,
+               COUNT(*) AS alumnos
+        FROM v_bloque_asignado ba
+        WHERE ba.aplicacion = :a GROUP BY ba.origen""")
+
+    aceptacion = q("""
+        SELECT diagnosticados, aceptaron, cambiaron, sin_confirmar, pct_aceptacion
+        FROM v_aceptacion_diagnostico WHERE aplicacion = :a""")
+
+    cambios = q("""
+        SELECT recomendado, elegido, alumnos
+        FROM v_cambios_de_bloque WHERE aplicacion = :a LIMIT 12""")
 
     bloques = q("""
-        SELECT id, nombre, frase, alumnos, eligieron_directo, por_cuestionario
+        SELECT id, nombre, frase, alumnos, eligieron_directo, por_cuestionario,
+               aceptaron_diagnostico, eligieron_distinto, sin_confirmar
         FROM v_demanda_bloque WHERE aplicacion = :a ORDER BY alumnos DESC""")
 
     optativas = q("""
@@ -82,6 +102,8 @@ def resumen():
                    optativas=[dict(f) for f in optativas],
                    academias=[dict(f) for f in academias],
                    secciones=[dict(f) for f in secciones],
+                   aceptacion=dict(aceptacion[0]) if aceptacion else None,
+                   cambios=[dict(f) for f in cambios],
                    bloques_vacios=[dict(f) for f in vacios])
 
 
@@ -106,6 +128,8 @@ def padron():
           i.id                           AS bloque_id,
           i.nombre                       AS bloque,
           i.frase,
+          rec.nombre                     AS recomendado,
+          s.veces_cambiada,
           r.perfil_plano,
           r.empate_tecnico,
           s.completada_en,
@@ -114,13 +138,15 @@ def padron():
         FROM sesion s
         JOIN usuario u ON u.id = s.usuario
         LEFT JOIN resultado r  ON r.sesion = s.id
-        LEFT JOIN itinerario i ON i.id = COALESCE(s.itinerario_elegido, r.itinerario)
+        LEFT JOIN itinerario i   ON i.id = COALESCE(s.itinerario_elegido, r.itinerario)
+        LEFT JOIN itinerario rec ON rec.id = r.itinerario
         LEFT JOIN itinerario_optativa io ON io.itinerario = i.id
         LEFT JOIN optativa o ON o.clave = io.optativa
         WHERE s.aplicacion = :a
         GROUP BY u.matricula, u.nombre, u.seccion, u.correo, s.estado, s.modo,
-                 i.id, i.nombre, i.frase, r.perfil_plano, r.empate_tecnico,
-                 s.completada_en, s.actualizada_en
+                 s.itinerario_elegido, r.sesion, r.itinerario,
+                 i.id, i.nombre, i.frase, rec.nombre, s.veces_cambiada,
+                 r.perfil_plano, r.empate_tecnico, s.completada_en, s.actualizada_en
         ORDER BY u.seccion, u.matricula
     """), {"a": aid}).mappings().all()
     return jsonify(aplicacion=aid, alumnos=[dict(f) for f in filas])
@@ -134,10 +160,12 @@ def padron_csv():
     buf = io.StringIO()
     w = csv.writer(buf)
     w.writerow(["Matricula", "Seccion", "Nombre", "Correo", "Estado", "Metodo",
-                "Bloque", "Optativas", "Sin definir", "Fecha"])
+                "Bloque elegido", "Bloque recomendado", "Veces que lo cambio",
+                "Optativas", "Sin definir", "Fecha"])
     for a in datos:
         w.writerow([a["matricula"], a["seccion"], a["nombre"], a["correo"], a["estado"],
-                    a["metodo"], a["bloque"] or "", a["optativas"] or "",
+                    a["metodo"], a["bloque"] or "", a["recomendado"] or "",
+                    a["veces_cambiada"] or 0, a["optativas"] or "",
                     "Sí" if a["perfil_plano"] else "", a["completada_en"] or ""])
     # BOM para que Excel en Windows no rompa los acentos
     salida = "\ufeff" + buf.getvalue()

@@ -150,6 +150,8 @@ class Sesion(db.Model):
     iniciada_en = db.Column(db.DateTime, default=datetime.utcnow)
     actualizada_en = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     completada_en = db.Column(db.DateTime)
+    eleccion_en = db.Column(db.DateTime)
+    veces_cambiada = db.Column(db.SmallInteger, default=0)
 
 
 class RespuestaFase1(db.Model):

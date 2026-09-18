@@ -192,10 +192,19 @@ def guardar_respuesta():
 @bp.post("/sesion/elegir-bloque")
 @jwt_required()
 def elegir_bloque():
-    """El estudiante que ya sabe cuál quiere lo registra y termina aquí mismo.
-    No se le aplica el cuestionario: el plan de estudios le permite elegir, y
-    obligarlo a contestar quince reactivos para confirmar lo que ya decidió
-    sólo lograría que abandone."""
+    """Registra el bloque que el estudiante decide cursar.
+
+    Se usa en dos momentos: cuando dice de entrada que ya sabe cuál quiere, y
+    cuando termina el cuestionario y confirma —o descarta— la recomendación.
+
+    El resultado del diagnóstico NO se borra al elegir otro bloque. Guardar las
+    dos cosas es lo que permite saber después si el instrumento le hace sentido
+    a quien lo contesta; si sólo guardáramos la decisión final, perderíamos la
+    única medida de si el diagnóstico sirve.
+
+    Se puede cambiar cuantas veces se quiera mientras la fecha límite no haya
+    pasado. Obligar a alguien a sostener una decisión que tomó en dos minutos
+    es justo lo que genera el arrepentimiento que este cambio busca evitar."""
     u = usuario_actual()
     app_ = _aplicacion_activa()
     if not app_:
@@ -210,15 +219,18 @@ def elegir_bloque():
     if not it:
         return jsonify(error="Ese bloque no existe."), 400
 
-    # Si ya había contestado el cuestionario, su resultado se descarta: la
-    # decisión del estudiante manda sobre la recomendación del sistema.
-    Resultado.query.filter_by(sesion=s.id).delete()
+    hubo_diagnostico = db.session.get(Resultado, s.id) is not None
+    if s.itinerario_elegido and s.itinerario_elegido != it.id:
+        s.veces_cambiada = (s.veces_cambiada or 0) + 1
 
     s.itinerario_elegido = it.id
-    s.modo = "eleccion_directa"
-    s.ya_decidio = True
+    s.eleccion_en = datetime.utcnow()
+    if not hubo_diagnostico:
+        # Sólo es elección directa si nunca contestó el cuestionario.
+        s.modo = "eleccion_directa"
+        s.ya_decidio = True
     s.estado = "completada"
-    s.completada_en = datetime.utcnow()
+    s.completada_en = s.completada_en or datetime.utcnow()
     s.paso_actual = "resultado"
     db.session.commit()
 
@@ -299,30 +311,33 @@ def resultado():
     app_ = _aplicacion_activa()
     s = _sesion_de(u, app_)
 
-    # camino corto: eligió su bloque sin contestar
-    if s.itinerario_elegido:
-        it = db.session.get(Itinerario, s.itinerario_elegido)
-        opts = (db.session.query(Optativa)
-                .join(ItinerarioOptativa, ItinerarioOptativa.optativa == Optativa.clave)
-                .filter(ItinerarioOptativa.itinerario == it.id)
-                .order_by(ItinerarioOptativa.orden).all())
-        return jsonify(origen="eleccion_directa",
-                       bloque={**it.publico(),
-                               "optativas": [{"clave": o.clave, "nombre": o.nombre} for o in opts]})
+    por_bloque_todos = {}
+    for io in ItinerarioOptativa.query.order_by(ItinerarioOptativa.orden):
+        por_bloque_todos.setdefault(io.itinerario, []).append(io.optativa)
+    nombres_opt = {o.clave: o.nombre for o in Optativa.query.all()}
+
+    def bloque_completo(iti):
+        return {**iti.publico(),
+                "optativas": [{"clave": c, "nombre": nombres_opt.get(c)}
+                              for c in por_bloque_todos.get(iti.id, [])]}
+
+    elegido = (bloque_completo(db.session.get(Itinerario, s.itinerario_elegido))
+               if s.itinerario_elegido else None)
 
     r = db.session.get(Resultado, s.id)
-    if not r:
-        return jsonify(error="Todavía no has terminado el cuestionario."), 404
 
+    # Eligió sin contestar el cuestionario: no hay nada que comparar.
+    if not r:
+        if elegido:
+            return jsonify(origen="eleccion_directa", bloque=elegido, eleccion=elegido,
+                           puede_cambiar=not app_.vencida)
+        return jsonify(error="Todavía no has elegido tu bloque."), 404
     filas = (db.session.query(ResultadoItinerario, Itinerario)
              .join(Itinerario, Itinerario.id == ResultadoItinerario.itinerario)
              .filter(ResultadoItinerario.sesion == s.id)
              .order_by(ResultadoItinerario.posicion).all())
 
-    por_bloque = {}
-    for io in ItinerarioOptativa.query.order_by(ItinerarioOptativa.orden):
-        por_bloque.setdefault(io.itinerario, []).append(io.optativa)
-    nombres = {o.clave: o.nombre for o in Optativa.query.all()}
+    por_bloque, nombres = por_bloque_todos, nombres_opt
 
     # Filtra contra la oferta real: no tiene caso recomendar un bloque cuyas
     # optativas no se van a abrir.
@@ -339,6 +354,10 @@ def resultado():
 
     return jsonify(
         origen="cuestionario",
+        eleccion=elegido,
+        confirmado=elegido is not None,
+        acepto_recomendacion=bool(elegido and r.itinerario and elegido["id"] == r.itinerario),
+        puede_cambiar=not app_.vencida,
         perfil_plano=r.perfil_plano,
         empate_tecnico=r.empate_tecnico,
         recomendado=None if r.perfil_plano else ranking[0],
